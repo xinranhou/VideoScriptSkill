@@ -1,0 +1,26 @@
+{
+  "tencent": {
+    "secret_id": "YOUR_SECRET_ID",
+    "secret_key": "YOUR_SECRET_KEY",
+    "region": "ap-guangzhou"
+  },
+  "minimax": {
+    "api_key": "YOUR_MINIMAX_API_KEY"
+  },
+  "asr": {
+    "engine": "16k_zh",
+    "voice_format": "wav",
+    "sample_rate": 16000,
+    "chunk_duration": 45,
+    "max_retries": 3,
+    "retry_base_delay": 3,
+    "batch_sleep_seconds": 2,
+    "batch_size": 10
+  },
+  "slicing": {
+    "min_silence_len": 0.4,
+    "silence_thresh": -42,
+    "max_offset": 2.0,
+    "min_pause_sec": 0.5
+  }
+}

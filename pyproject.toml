@@ -1,0 +1,23 @@
+[project]
+name = "videoscripts-skill"
+version = "0.1.0"
+description = "视频转文字 Skill，支持腾讯云 ASR，输出带时间定位的 Markdown 脚本"
+requires-python = ">=3.12"
+dependencies = [
+    "tencentcloud-sdk-python>=3.0.1180",
+    "fastmcp>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "responses>=0.25.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "responses>=0.25.0",
+]

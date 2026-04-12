@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"D:/ClaudeProjects/VideoScriptSkill/testSample/VideoSample.mp4\" \"D:/ClaudeProjects/VideoScriptSkill/tests/fixtures/\")",
+      "Bash(cp \"D:/ClaudeProjects/VideoScriptSkill/testSample/audioSample.wav\" \"D:/ClaudeProjects/VideoScriptSkill/tests/fixtures/\")",
+      "Bash(uv --version)",
+      "Bash(ffmpeg -version)",
+      "Bash(where python:*)",
+      "Bash(winget install:*)",
+      "Bash(cmd.exe /c \"winget install ffmpeg --accept-package-agreements --accept-source-agreements\")",
+      "Bash(cmd.exe /c \"scoop install ffmpeg\")",
+      "Bash(uv sync:*)",
+      "Bash(uv run python -c ':*)",
+      "Bash(uv run:*)",
+      "Bash(where ffmpeg:*)",
+      "Read(//c/ffmpeg/bin/**)",
+      "Read(//c/Program Files/ffmpeg/bin/**)",
+      "Bash(winget list:*)"
+    ]
+  }
+}

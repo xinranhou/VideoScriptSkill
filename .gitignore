@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.uv/
+
+# 测试产物
+chunk_*/
+chunks_*/
+testSample/
+tests/fixtures/*.wav
+tests/fixtures/*.mp4
+!tests/fixtures/*.md
+
+# 本地配置和凭证
+config.json
+~/.config/videoscripts/
+
+# Claude 开发文档（仅本地使用）
+CLAUDE.md
+
+# IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# 其他
+*.log
+*.tmp
