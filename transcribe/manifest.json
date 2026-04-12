@@ -17,8 +17,8 @@
   ],
   "mcpServers": [
     {
-      "command": "python",
-      "args": ["server/server.py"],
+      "command": "uv",
+      "args": ["run", "python", "__PROJECT_PATH__/server/server.py"],
       "env": {},
       "description": "视频转文字 MCP Server"
     }

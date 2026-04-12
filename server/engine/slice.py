@@ -298,22 +298,23 @@ def split_audio_by_chunks(
     pos = 0.0
 
     while pos < duration:
-        next_pos = pos + chunk_duration
-        if next_pos > duration:
-            next_pos = duration
+        remaining = duration - pos
 
-        # 最后一个片段不允许比 min_duration 更短
-        if next_pos == duration and next_pos - pos < min_duration:
-            if chunks:
-                # 合并到上一个片段
-                prev = chunks[-1]
+        # 剩余不足 min_duration：合并到上一片段（需确保合并后 ≤ 59s）
+        if remaining < min_duration:
+            if not chunks:
+                # 整段视频不足 30s，直接作为一段
+                break
+            prev = chunks[-1]
+            merged_duration = prev.end_sec - prev.start_sec + remaining
+            if merged_duration <= 59:
+                # 合并：扩展上一片段，并重新生成音频
                 chunks[-1] = Chunk(
                     index=prev.index,
                     start_sec=prev.start_sec,
                     end_sec=duration,
                     path=prev.path,
                 )
-                # 重新生成最后一片
                 subprocess.run(
                     [
                         "ffmpeg", "-y",
@@ -327,20 +328,73 @@ def split_audio_by_chunks(
                     text=True,
                     check=True,
                 )
+            else:
+                # 合并后会超 59s：先在上一个片段末尾附近找停顿点切分
+                split_target = prev.end_sec - (merged_duration - 59)
+                best_cut = None
+                best_dist = float("inf")
+                for seg in silence_ranges:
+                    mid = (seg["start"] + seg["end"]) / 2
+                    if prev.start_sec + 30 <= mid <= prev.end_sec - 10:
+                        dist = abs(mid - split_target)
+                        if dist < best_dist:
+                            best_dist = dist
+                            best_cut = mid
+                for pt in energy_points:
+                    if prev.start_sec + 30 <= pt <= prev.end_sec - 10:
+                        dist = abs(pt - split_target)
+                        if dist < best_dist:
+                            best_dist = dist
+                            best_cut = pt
+                split_at = best_cut if best_cut is not None else split_target
+                # 截断上一片段
+                prev.end_sec = split_at
+                subprocess.run(
+                    [
+                        "ffmpeg", "-y",
+                        "-i", str(audio_path),
+                        "-ss", str(prev.start_sec),
+                        "-to", str(split_at),
+                        "-ar", "16000", "-ac", "1", "-acodec", "pcm_s16le",
+                        str(prev.path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                # 最后小片段独立保留（后续循环会处理）
+                remaining = duration - split_at
+                pos = split_at
+                if remaining < min_duration:
+                    break
+                continue
             break
 
-        # 找最佳切割点
-        cut = _find_cut_point(
-            target=(pos + next_pos) / 2,
-            silence_ranges=silence_ranges,
-            energy_points=energy_points,
-            pos=pos,
-            min_duration=min_duration,
-            max_offset=max_offset,
-        )
-        actual_end = min(cut, next_pos)
-        if actual_end <= pos + min_duration:
-            actual_end = next_pos
+        # 正常片段：在 [pos+30, pos+59] 范围内找最近的停顿点
+        target = pos + chunk_duration
+        best_cut = None
+        best_dist = float("inf")
+
+        for seg in silence_ranges:
+            mid = (seg["start"] + seg["end"]) / 2
+            if pos + 30 <= mid <= min(pos + 59, duration):
+                dist = abs(mid - target)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_cut = mid
+
+        for pt in energy_points:
+            if pos + 30 <= pt <= min(pos + 59, duration):
+                dist = abs(pt - target)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_cut = pt
+
+        if best_cut is not None:
+            actual_end = best_cut
+        else:
+            # 没有找到自然停顿：在 59 秒处硬切
+            actual_end = min(pos + 59, duration)
 
         chunk_path = output_dir / f"c_{int(pos)}_{int(actual_end)}.wav"
 

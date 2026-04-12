@@ -167,22 +167,51 @@ else
 fi
 
 # ============================================================================
-# 6. 注册 MCP Server（Claude Code）
+# 6. 安装 Skill 到 Claude Code
+# ============================================================================
+echo ""
+SKILL_DIR="${HOME}/.claude/skills/transcribe"
+info "安装 Skill 到 Claude Code..."
+echo ""
+
+if [ -d "$SKILL_DIR" ]; then
+    confirm "发现已有 Skill，是否覆盖？(y/N)"
+    if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
+        rm -rf "$SKILL_DIR"
+    else
+        info "跳过 Skill 安装（现有 ${SKILL_DIR} 保持不变）"
+        SKILL_INSTALLED=skip
+    fi
+fi
+
+if [ "${SKILL_INSTALLED:-}" != "skip" ]; then
+    mkdir -p "$(dirname "$SKILL_DIR")"
+
+    # 复制 skill 文件，动态替换 manifest 中的路径占位符
+    mkdir -p "$SKILL_DIR"
+    cp "${PROJECT_ROOT}/transcribe/prompt.md" "$SKILL_DIR/prompt.md"
+
+    # 替换 manifest 中的项目路径为实际安装路径
+    sed "s|__PROJECT_PATH__|${PROJECT_ROOT}|g" \
+        "${PROJECT_ROOT}/transcribe/manifest.json" \
+        > "$SKILL_DIR/manifest.json"
+
+    info "Skill 已安装到 ${SKILL_DIR}"
+    info "请重启 Claude Code 使 Skill 生效"
+fi
+
+# ============================================================================
+# 7. 注册 MCP Server（Claude Code）
 # ============================================================================
 echo ""
 info "注册 MCP Server..."
-info "Claude Code 用户请运行以下命令："
-echo ""
-echo "    uv run mcp install ${PROJECT_ROOT}/server/server.py"
-echo ""
-echo "或者在 Claude Code 设置中添加 MCP Server，命令为："
-echo "    ${MCP_COMMAND}"
-echo ""
 
-confirm "是否现在注册 MCP Server？(y/N)"
-if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
-    uv run mcp install "${PROJECT_ROOT}/server/server.py"
+# 自动注册（静默模式，已知路径）
+if uv run mcp install "${PROJECT_ROOT}/server/server.py" 2>/dev/null; then
     info "MCP Server 注册完成"
+else
+    info "MCP Server 注册失败，请手动运行："
+    echo "    uv run mcp install ${PROJECT_ROOT}/server/server.py"
 fi
 
 # ============================================================================

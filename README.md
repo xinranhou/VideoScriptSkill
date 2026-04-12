@@ -191,7 +191,7 @@ VideoScriptSkill/
 ├── config.example.json    # 配置示例
 ├── .gitignore
 │
-├── skill/                 # Prompt Skill
+├── transcribe/            # Claude Code Skill（与 /transcribe 命令同名）
 │   ├── manifest.json      # Skill 元数据
 │   └── prompt.md          # 对话提示词
 │
