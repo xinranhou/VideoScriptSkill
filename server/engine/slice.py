@@ -266,7 +266,7 @@ def split_audio_by_chunks(
     audio_path: str | Path,
     output_dir: str | Path,
     chunk_duration: int = 45,
-    min_duration: int = 30,
+    min_duration: int = 15,
     max_offset: float = 2.0,
 ) -> list[Chunk]:
     """
@@ -335,13 +335,13 @@ def split_audio_by_chunks(
                 best_dist = float("inf")
                 for seg in silence_ranges:
                     mid = (seg["start"] + seg["end"]) / 2
-                    if prev.start_sec + 30 <= mid <= prev.end_sec - 10:
+                    if prev.start_sec + min_duration <= mid <= prev.end_sec - 10:
                         dist = abs(mid - split_target)
                         if dist < best_dist:
                             best_dist = dist
                             best_cut = mid
                 for pt in energy_points:
-                    if prev.start_sec + 30 <= pt <= prev.end_sec - 10:
+                    if prev.start_sec + min_duration <= pt <= prev.end_sec - 10:
                         dist = abs(pt - split_target)
                         if dist < best_dist:
                             best_dist = dist
@@ -377,14 +377,14 @@ def split_audio_by_chunks(
 
         for seg in silence_ranges:
             mid = (seg["start"] + seg["end"]) / 2
-            if pos + 30 <= mid <= min(pos + 59, duration):
+            if pos + min_duration <= mid <= min(pos + 59, duration):
                 dist = abs(mid - target)
                 if dist < best_dist:
                     best_dist = dist
                     best_cut = mid
 
         for pt in energy_points:
-            if pos + 30 <= pt <= min(pos + 59, duration):
+            if pos + min_duration <= pt <= min(pos + 59, duration):
                 dist = abs(pt - target)
                 if dist < best_dist:
                     best_dist = dist

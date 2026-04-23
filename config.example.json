@@ -11,7 +11,7 @@
     "engine": "16k_zh",
     "voice_format": "wav",
     "sample_rate": 16000,
-    "chunk_duration": 45,
+    "chunk_duration": 15,  // 推荐 15-25 秒，网络最稳定
     "max_retries": 3,
     "retry_base_delay": 3,
     "batch_sleep_seconds": 2,
