@@ -2,7 +2,7 @@
   "mcpServers": {
     "videoscripts": {
       "command": "uv",
-      "args": ["run", "python", "D:\\ClaudeProjects\\VideoScriptSkill\\server\\server.py"]
+      "args": ["run", "python", "/Users/juliehou/ClaudeCode/VideoScriptSkill/server/server.py"]
     }
   }
 }

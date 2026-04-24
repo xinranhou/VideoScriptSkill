@@ -17,5 +17,9 @@
       "Read(//c/Program Files/ffmpeg/bin/**)",
       "Bash(winget list:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "videoscripts"
+  ],
+  "enableAllProjectMcpServers": true
 }
