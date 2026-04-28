@@ -64,7 +64,10 @@ mcpServers:
     command: uv
     args:
       - run
-      - python
+      - --with
+      - fastmcp
+      - fastmcp
+      - run
       - /path/to/VideoScriptSkill/server/server.py
 ```
 

@@ -21,6 +21,9 @@ def fmt_timestamp(seconds: float) -> str:
 def merge_to_markdown(
     chunks: list,
     results: dict[int, str | None],
+    engine_name: str = "腾讯云 ASR",
+    duration_sec: float | None = None,
+    translation: bool = False,
 ) -> str:
     """
     将切片结果合并为 Markdown 格式。
@@ -56,6 +59,12 @@ def merge_to_markdown(
             fail_count += 1
 
     lines.append("---")
-    lines.append(f"*共 {len(chunks)} 个切片，成功 {success_count}，失败 {fail_count}*")
+    meta_parts = [f"共 {len(chunks)} 个切片，成功 {success_count}，失败 {fail_count}"]
+    meta_parts.append(f"引擎：{engine_name}")
+    if translation:
+        meta_parts.append("翻译：是")
+    if duration_sec is not None:
+        meta_parts.append(f"耗时：{duration_sec:.1f} 秒")
+    lines.append(f"* {' | '.join(meta_parts)} *")
 
     return "\n".join(lines)

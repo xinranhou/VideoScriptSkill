@@ -35,3 +35,9 @@ Thumbs.db
 # 其他
 *.log
 *.tmp
+
+# 本地数据和缓存
+downloads/
+logs/
+.pytest_cache/
+.mcp.json

@@ -1,40 +1,38 @@
 # VideoScriptSkill
 
-将 mp4 视频或 wav 音频转录为带时间定位的 Markdown 文字脚本。支持断点续传，腾讯云 ASR 驱动。
+将 mp4 视频、wav 音频或网络视频 URL 转录为带时间定位的 Markdown 文字脚本。支持断点续传，腾讯云 ASR 驱动。
 
 ## 功能特性
 
-- **多格式支持**：输入 mp4 视频或 wav 音频
+- **多格式支持**：输入 mp4 视频、wav 音频或网络 URL（B站、YouTube、抖音等）
+- **网络视频下载**：支持通过 yt-dlp 下载 B站、YouTube、抖音、小红书、西瓜视频等，CDN 直链不加信息头直接下载
 - **智能切片**：静音检测 + 能量分析双保险，优先在自然停顿点切割
 - **断点续传**：意外中断后可从上次位置继续
 - **时间定位**：每个片段精确到 MM:SS 时间戳
-- **单线程处理**：不卡死系统，适合云端环境
+- **单线程处理**：切片后逐个处理，每完成一片实时通知用户进度
 - **Markdown 输出**：结构清晰，便于阅读和二次编辑
 - **LLM 文本校正**：可选调用 MiniMax M2.7 修正谐音错误、专有名词、术语（需要 MiniMax API Key）
 - **自动保存**：转录结果自动保存到视频同目录下的 `_transcript.md` 文件
+- **实时进度**：每个处理步骤实时展示当前进度
 
 ## 架构
 
 ```
-用户 (/transcribe video.mp4)
+用户 (/transcribe URL 或 /path/to/video.mp4)
          │
-         ▼
-┌──────────────────────────────────┐
-│  Prompt Skill (skill/prompt.md)  │ ← Claude Code 对话入口
-│  /transcribe 命令解析 & 输出格式化 │
-└──────────────────────────────────┘
-         │ MCP tool call
          ▼
 ┌──────────────────────────────────┐
 │  MCP Server (server/server.py)   │ ← 底层执行引擎
-│  ├─ slice.py  静音+能量切片        │
-│  ├─ asr.py    腾讯云 ASR 调用      │
-│  ├─ correct.py LLM 文本校正        │
-│  └─ merge.py 合并为 Markdown      │
+│  ├─ download.py  网络视频下载      │
+│  ├─ slice.py     静音+能量切片    │
+│  ├─ asr.py       腾讯云 ASR 调用   │
+│  ├─ whisper_asr.py 本地 Whisper    │
+│  ├─ correct.py   LLM 文本校正     │
+│  └─ merge.py     合并为 Markdown  │
 └──────────────────────────────────┘
          │
          ▼
-   腾讯云 ASR API
+   腾讯云 ASR / Whisper API
 ```
 
 ## 前置要求
@@ -79,14 +77,17 @@ uv run mcp install server/server.py
 
 ### 在 Claude Code 中
 
+支持本地文件和网络 URL：
+
 ```
-/transcribe video.mp4
+/transcribe https://www.bilibili.com/video/BV1xx411c7XD
+/transcribe /path/to/video.mp4
 ```
 
 或更详细的命令：
 
 ```
-/transcribe video.mp4 --language zh --chunk-duration 45 --output script.md
+/transcribe https://www.bilibili.com/video/BV1xx411c7XD --chunk-duration 45
 ```
 
 ### 通过 MCP Tool
@@ -95,13 +96,25 @@ Claude Code 安装 MCP Server 后，可直接调用工具：
 
 ```json
 {
+  "name": "download_video",
+  "arguments": {
+    "url": "https://www.bilibili.com/video/BV1xx411c7XD",
+    "quality": "1080p"
+  }
+}
+```
+
+```json
+{
   "name": "transcribe_video",
   "arguments": {
-    "video_path": "/path/to/video.mp4",
+    "video_path": "https://www.bilibili.com/video/BV1xx411c7XD",
     "chunk_duration": 45
   }
 }
 ```
+
+**支持的视频平台**：B站、YouTube、抖音、小红书、西瓜视频等主流平台
 
 ### 检查配置
 
@@ -189,19 +202,18 @@ VideoScriptSkill/
 ├── LICENSE                 # MIT
 ├── pyproject.toml         # Python 项目配置
 ├── config.example.json    # 配置示例
+├── .mcp.json              # MCP Server 配置
 ├── .gitignore
-│
-├── transcribe/            # Claude Code Skill（与 /transcribe 命令同名）
-│   ├── manifest.json      # Skill 元数据
-│   └── prompt.md          # 对话提示词
 │
 ├── server/                # MCP Server
 │   ├── server.py          # MCP 入口
 │   ├── config.py          # 配置读写
 │   └── engine/
 │       ├── engine.py       # 主入口
+│       ├── download.py      # 网络视频下载（yt-dlp）
 │       ├── slice.py        # 视频切片
 │       ├── asr.py          # 腾讯云 ASR
+│       ├── whisper_asr.py  # 本地 Whisper ASR
 │       ├── correct.py      # MiniMax LLM 文本校正
 │       └── merge.py        # Markdown 合并
 │

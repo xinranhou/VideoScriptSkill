@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 _CONFIG_PATH = Path.home() / ".config" / "videoscripts" / "config.json"
 
@@ -63,6 +63,28 @@ def get_asr_config() -> dict[str, Any]:
             "retry_base_delay": 3,
             "batch_sleep_seconds": 2,
             "batch_size": 10,
+        },
+    )
+
+
+def get_asr_engine() -> Literal["tencent", "whisper"]:
+    """获取当前选用的 ASR 引擎"""
+    config = load_config()
+    engine = config.get("asr_engine", "whisper")
+    if engine not in ("tencent", "whisper"):
+        engine = "whisper"
+    return engine  # type: ignore[return-value]
+
+
+def get_whisper_config() -> dict[str, Any]:
+    """获取 Whisper 配置"""
+    config = load_config()
+    return config.get(
+        "whisper",
+        {
+            "model": "base",
+            "language": None,  # None = 自动检测
+            "task": "transcribe",
         },
     )
 

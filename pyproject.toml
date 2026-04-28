@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
     "tencentcloud-sdk-python>=3.0.1180",
     "fastmcp>=0.1.0",
+    "openai-whisper>=20250310",
+    "yt-dlp>=2024.0.0",
 ]
 
 [project.optional-dependencies]

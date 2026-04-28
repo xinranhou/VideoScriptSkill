@@ -268,6 +268,7 @@ def split_audio_by_chunks(
     chunk_duration: int = 45,
     min_duration: int = 15,
     max_offset: float = 2.0,
+    progress_callback=None,
 ) -> list[Chunk]:
     """
     将音频切分为 30-59 秒的自然片段。
@@ -285,11 +286,17 @@ def split_audio_by_chunks(
 
     duration = get_duration(audio_path)
     logger.info(f"音频总时长 {duration:.0f}s，开始切片...")
+    if progress_callback:
+        progress_callback("slice_start", {"duration": duration})
 
     # 预分析（各只跑一次）
+    if progress_callback:
+        progress_callback("analyze", {"step": "silence"})
     silence_ranges = detect_silence(audio_path)
     logger.debug(f"检测到 {len(silence_ranges)} 个静音段")
 
+    if progress_callback:
+        progress_callback("analyze", {"step": "energy"})
     energy_points = find_pause_points(audio_path)
     logger.debug(f"能量分析找到 {len(energy_points)} 个停顿点")
 
@@ -414,9 +421,18 @@ def split_audio_by_chunks(
 
         chunks.append(Chunk(index=chunk_idx, start_sec=pos, end_sec=actual_end, path=chunk_path))
         chunk_idx += 1
+        if progress_callback:
+            progress_callback("chunk", {
+                "index": chunk_idx,
+                "total_estimate": int(duration / chunk_duration) + 1,
+                "start_sec": pos,
+                "end_sec": actual_end,
+            })
         pos = actual_end
 
     logger.info(f"切片完成: {len(chunks)} 个片段")
+    if progress_callback:
+        progress_callback("complete", {"chunk_count": len(chunks)})
     for c in chunks:
         logger.debug(f"  [{c.start_sec:.0f}s - {c.end_sec:.0f}s] {c.path.name}")
 
@@ -427,10 +443,36 @@ def split_audio_by_chunks(
 # 入口
 # ---------------------------------------------------------------------------
 
+def load_existing_chunks(chunks_dir: Path | str) -> list[Chunk]:
+    """
+    从已存在的切片目录加载 Chunk 列表（用于断点续传，跳过已完成的切片）。
+
+    通过扫描 chunks_dir 目录下的 c_{start}_{end}.wav 文件还原切片信息。
+    """
+    chunks_dir = Path(chunks_dir)
+    if not chunks_dir.exists():
+        return []
+
+    chunks = []
+    for f in sorted(chunks_dir.glob("c_*.wav")):
+        try:
+            parts = f.stem.split("_")  # "c_{start}_{end}"
+            if len(parts) != 3:
+                continue
+            start_sec = float(parts[1])
+            end_sec = float(parts[2])
+            if f.stat().st_size > 0:  # 文件非空
+                chunks.append(Chunk(index=len(chunks), start_sec=start_sec, end_sec=end_sec, path=f))
+        except (ValueError, IndexError):
+            continue
+    return chunks
+
+
 def prepare_chunks(
     video_path: str | Path,
     workspace_dir: str | Path | None = None,
     chunk_duration: int = 45,
+    progress_callback=None,
 ) -> tuple[Path, list[Chunk]]:
     """
     准备音频切片：如果是视频先提取音频，再切片。
@@ -447,14 +489,34 @@ def prepare_chunks(
     workspace_dir = Path(workspace_dir) if workspace_dir else Path(tempfile.mkdtemp(prefix="videoscripts_"))
 
     suffix = video_path.suffix.lower()
+    audio_path: Path
     if suffix == ".wav":
         audio_path = video_path
+        if progress_callback:
+            progress_callback("audio_extract", {"status": "skip", "reason": "wav file"})
     elif suffix == ".mp4":
         audio_path = workspace_dir / "audio_extract.wav"
-        extract_audio(video_path, audio_path)
+        if audio_path.exists():
+            if progress_callback:
+                progress_callback("audio_extract", {"status": "skip", "reason": "audio already exists"})
+        else:
+            if progress_callback:
+                progress_callback("audio_extract", {"status": "start"})
+            extract_audio(video_path, audio_path)
+            if progress_callback:
+                progress_callback("audio_extract", {"status": "done", "path": str(audio_path)})
     else:
         raise ValueError(f"不支持的视频格式: {suffix}，目前支持 mp4 和 wav")
 
     chunks_dir = workspace_dir / "chunks"
-    chunks = split_audio_by_chunks(audio_path, chunks_dir, chunk_duration=chunk_duration)
+
+    # 检查已有切片：有完整切片文件时跳过切片步骤
+    existing = load_existing_chunks(chunks_dir)
+    if existing:
+        logger.info(f"检测到已有切片 {len(existing)} 个，跳过切片步骤")
+        if progress_callback:
+            progress_callback("complete", {"chunk_count": len(existing)})
+        return workspace_dir, existing
+
+    chunks = split_audio_by_chunks(audio_path, chunks_dir, chunk_duration=chunk_duration, progress_callback=progress_callback)
     return workspace_dir, chunks

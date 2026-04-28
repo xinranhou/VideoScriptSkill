@@ -1,4 +1,5 @@
 {
+  "asr_engine": "tencent",  // 可选: "tencent" 或 "whisper"
   "tencent": {
     "secret_id": "YOUR_SECRET_ID",
     "secret_key": "YOUR_SECRET_KEY",
@@ -11,11 +12,16 @@
     "engine": "16k_zh",
     "voice_format": "wav",
     "sample_rate": 16000,
-    "chunk_duration": 15,  // 推荐 15-25 秒，网络最稳定
+    "chunk_duration": 15,
     "max_retries": 3,
     "retry_base_delay": 3,
     "batch_sleep_seconds": 2,
     "batch_size": 10
+  },
+  "whisper": {
+    "model": "medium",  // 可选: "tiny", "base", "small", "medium", "large"
+    "language": null,  // null = 自动检测，也可指定 "zh", "en" 等
+    "task": "transcribe"
   },
   "slicing": {
     "min_silence_len": 0.4,

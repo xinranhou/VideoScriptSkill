@@ -1,8 +1,13 @@
 {
-  "mcpServers": {
-    "videoscripts": {
-      "command": "uv",
-      "args": ["run", "python", "/Users/juliehou/ClaudeCode/VideoScriptSkill/server/server.py"]
-    }
+  "server": {
+    "command": "uv",
+    "args": [
+      "run",
+      "--with",
+      "fastmcp",
+      "fastmcp",
+      "run",
+      "/Users/juliehou/ClaudeCode/VideoScriptSkill/server/server.py"
+    ]
   }
 }
